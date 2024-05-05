@@ -2,26 +2,26 @@ pipeline {
     agent any
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build('s3-to-rds-lambda:latest')
+                    docker.build('s3-to-rds-lambda')
                 }
             }
         }
+
         stage('Push Docker Image to ECR') {
             steps {
                 script {
-                    sh 'aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/c2p8o7x3'
-                    docker.image('s3-to-rds-lambda:latest').push('public.ecr.aws/c2p8o7x3/s3-to-rds-lambda:latest')
-                }
-            }
-        }
-        stage('Deploy Infrastructure with Terraform') {
-            steps {
-                script {
-                    sh 'terraform init'
-                    sh 'terraform apply --auto-approve'
+                    docker.withRegistry('https://206515996474.dkr.ecr.us-east-1.amazonaws.com', 'ecr:us-east-1') {
+                        docker.image('s3-to-rds-lambda').push('latest')
+                    }
                 }
             }
         }
